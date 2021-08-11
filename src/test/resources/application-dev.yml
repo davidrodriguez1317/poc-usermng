@@ -1,0 +1,17 @@
+server:
+  port: 8085
+
+usermng:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: test
+    password: test
+  keycloak:
+    auth-server-url: http://localhost:8080/auth
+    realm: master
+    resource: serviceware-usermng
+    credentials:
+      # secret: ed4d1fd2-1820-4557-8037-7744151cbfaa
+      secret: fea9a70e-e0cc-4310-bd2a-bf1d7e9fc66f #Docker
+

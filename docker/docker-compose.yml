@@ -1,0 +1,123 @@
+version: "2.2"
+
+networks:
+  usermng-network:
+    name: usermng-net
+volumes:
+  postgres_data:
+    driver: local
+  rabbit_data:
+    driver: local
+services:
+  postgres:
+    image: postgres
+    container_name: postgres_keycloak
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    networks:
+      - usermng-network
+  keycloak:
+    image: keycloak-custom-usermng:latest
+    container_name: keycloak
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_SCHEMA: public
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+      USERMNG_URL: http://usermng:8085/usermng/
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+    networks:
+      - usermng-network
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    volumes:
+      - rabbit_data:/etc/rabbitmq/
+      - rabbit_data:/var/lib/rabbitmq/
+      - rabbit_data:/var/log/rabbitmq/
+    environment:
+      RABBITMQ_DEFAULT_USER: test
+      RABBITMQ_DEFAULT_PASS: test
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - usermng-network
+  usermng:
+    image: docker.io/library/usermng:0.0.1-SNAPSHOT
+    container_name: usermng
+    ports:
+      - 8085:8085
+    environment:
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080/auth
+      KEYCLOAK_REALM: master
+      KEYCLOAK_RESOURCE: serviceware-usermng
+      KEYCLOAK_CREDENTIALS_SECRET: fea9a70e-e0cc-4310-bd2a-bf1d7e9fc66f
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: test
+      SPRING_RABBITMQ_PASSWORD: test
+    depends_on:
+      - keycloak
+      - rabbitmq
+    networks:
+      - usermng-network
+  platform-client-01:
+    image: docker.io/library/platform-application:0.0.1-SNAPSHOT
+    restart: on-failure
+    container_name: platform-client-01
+    hostname: platform-client-01
+    ports:
+      - 8901:8080
+    environment:
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080/auth
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: platform-tenant01-realm
+      KEYCLOAK_RESOURCE: platform-tenant01-client
+      KEYCLOAK_CREDENTIALS_SECRET: 899efb7f-479b-448e-8a02-cc30d17a253c
+      SPRING_RABBITMQ_VIRTUAL_HOST: platform_tenant01
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: admin_tenant01
+      SPRING_RABBITMQ_PASSWORD: test
+      USERMNG_SERVER: http://usermng:8085
+    depends_on:
+      - keycloak
+      - rabbitmq
+    networks:
+      - usermng-network
+  platform-client-02:
+    image: docker.io/library/platform-application:0.0.1-SNAPSHOT
+    restart: on-failure
+    container_name: platform-client-02
+    hostname: platform-client-02
+    ports:
+      - 8902:8080
+    environment:
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080/auth
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: platform-tenant02-realm
+      KEYCLOAK_RESOURCE: platform-tenant02-client
+      KEYCLOAK_CREDENTIALS_SECRET: 5e3c15ee-ae7c-4dd1-a27e-bc3452671d47
+      SPRING_RABBITMQ_VIRTUAL_HOST: platform_tenant02
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: admin_tenant02
+      SPRING_RABBITMQ_PASSWORD: test
+      USERMNG_SERVER: http://usermng:8085
+    depends_on:
+      - keycloak
+      - rabbitmq
+    networks:
+      - usermng-network

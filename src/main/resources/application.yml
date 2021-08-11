@@ -1,0 +1,42 @@
+server:
+  servlet:
+    context-path: /usermng
+
+spring:
+  profiles:
+    #    active: @active-profiles@
+    active: dev
+  security:
+    ignored: /actuator/**, /idp/user, /idp/log, /swagger-ui.html, /webjars/springfox-swagger-ui/**
+  rabbitmq:
+    host: ${usermng.rabbitmq.host}
+    port: ${usermng.rabbitmq.port}
+    username: ${usermng.rabbitmq.username}
+    password: ${usermng.rabbitmq.password}
+
+keycloak:
+  auth-server-url: ${usermng.keycloak.auth-server-url}
+  realm: ${usermng.keycloak.realm}
+  resource: ${usermng.keycloak.resource}
+  credentials:
+    secret: ${usermng.keycloak.credentials.secret}
+
+usermng:
+  rabbitmq:
+    exchange: usermng.admin
+    routingkeyprefix: usermng.backend.
+  keycloak:
+    jwk: ${keycloak.auth-server-url}/realms/%s/protocol/openid-connect/certs
+
+logging:
+  level:
+    org:
+      springframework:
+        security: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
